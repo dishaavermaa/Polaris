@@ -1,10 +1,29 @@
-# Streamly Backend
+# POLARIS
 
 Production-oriented backend for a video platform, built as a modular monolith with Node.js, Express, MongoDB, Cloudinary, and OpenAPI-powered docs via Scalar.
 
+<p align="center">
+  <img src="https://img.shields.io/badge/Node.js-Backend-green?style=for-the-badge&logo=node.js" />
+  <img src="https://img.shields.io/badge/Express.js-Framework-black?style=for-the-badge&logo=express" />
+  <img src="https://img.shields.io/badge/MongoDB-Database-green?style=for-the-badge&logo=mongodb" />
+  <img src="https://img.shields.io/badge/Cloudinary-Media-blue?style=for-the-badge&logo=cloudinary" />
+  <img src="https://img.shields.io/badge/OpenAPI-Docs-yellow?style=for-the-badge&logo=swagger" />
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/Auth-JWT-orange?style=flat-square&logo=jsonwebtokens" />
+  <img src="https://img.shields.io/badge/Architecture-Modular%20Monolith-purple?style=flat-square" />
+  <img src="https://img.shields.io/badge/Status-Production%20Ready-brightgreen?style=flat-square" />
+  <img src="https://img.shields.io/badge/API-REST-blue?style=flat-square" />
+</p>
+
+<p align="center">
+  <img src="https://skillicons.dev/icons?i=nodejs,express,mongodb,redis,docker,azure" />
+</p>
+
 ## Overview
 
-Streamly is structured to look like an actual backend service, not a tutorial app. It separates HTTP handling, business logic, persistence, infrastructure integrations, and shared middleware so features can grow without collapsing into controller-heavy code.
+Polaris is structured to look like an actual backend service, not a tutorial app. It separates HTTP handling, business logic, persistence, infrastructure integrations, and shared middleware so features can grow without collapsing into controller-heavy code.
 
 It currently supports:
 
@@ -213,7 +232,6 @@ cp .env.example .env
 | `RATE_LIMIT_WINDOW_MS` | no | Global rate-limit window |
 | `RATE_LIMIT_MAX_REQUESTS` | no | Global rate-limit cap |
 
-The checked-in example file is [`.env.example`](/home/sarthak/dev/Streamly-backend/.env.example).
 
 ### 4. Start MongoDB
 
