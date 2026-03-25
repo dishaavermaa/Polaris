@@ -23,15 +23,39 @@ const videoSchema = new Schema(
     },
     duration: {
       type: Number,
-      required: true,
+      default: 0,
     },
     views: {
       type: Number,
       default: 0,
     },
-    isPublished: {
-      type: Boolean,
-      default: true,
+    commentsCount: {
+      type: Number,
+      default: 0,
+    },
+    likesCount: {
+      type: Number,
+      default: 0,
+    },
+    status: {
+      type: String,
+      enum: ["draft", "published", "archived"],
+      default: "draft",
+      index: true,
+    },
+    visibility: {
+      type: String,
+      enum: ["public", "unlisted", "private"],
+      default: "public",
+      index: true,
+    },
+    tags: {
+      type: [String],
+      default: [],
+    },
+    publishedAt: {
+      type: Date,
+      default: null,
     },
     owner: {
       type: Schema.Types.ObjectId,
@@ -45,5 +69,6 @@ const videoSchema = new Schema(
 
 videoSchema.plugin(mongooseAggregatePaginate);
 videoSchema.index({ owner: 1, createdAt: -1 });
+videoSchema.index({ status: 1, visibility: 1, publishedAt: -1, createdAt: -1 });
 
 export const Video = mongoose.model("Video", videoSchema);
