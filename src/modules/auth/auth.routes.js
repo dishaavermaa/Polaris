@@ -3,8 +3,11 @@ import { login, logout, refresh, register } from "./auth.controller.js";
 import { validate } from "../../middlewares/validate.middleware.js";
 import { loginSchema, registerSchema } from "./auth.schema.js";
 import { upload } from "../../middlewares/multer.js";
+import { authRateLimiter } from "../../middlewares/rateLimit.middleware.js";
 
 const router = Router();
+
+router.use(authRateLimiter);
 
 router.post(
   "/register",

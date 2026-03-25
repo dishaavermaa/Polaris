@@ -9,6 +9,9 @@ const optionalEnv = {
   NODE_ENV: process.env.NODE_ENV ?? "development",
   PORT: Number(process.env.PORT ?? 8000),
   CORS_ORIGINS: parsedCorsOrigins,
+  APP_URL: process.env.APP_URL ?? "",
+  RATE_LIMIT_WINDOW_MS: Number(process.env.RATE_LIMIT_WINDOW_MS ?? 15 * 60 * 1000),
+  RATE_LIMIT_MAX_REQUESTS: Number(process.env.RATE_LIMIT_MAX_REQUESTS ?? 200),
 };
 
 const requiredEnvKeys = [

@@ -7,10 +7,12 @@ import videoRoutes from "../modules/videos/video.routes.js";
 import subscriptionRoutes from "../modules/subscriptions/subscription.routes.js";
 import commentRoutes from "../modules/comments/comment.routes.js";
 import reactionRoutes from "../modules/reactions/reaction.routes.js";
+import docsRoutes from "../modules/docs/docs.routes.js";
 
 const router = Router();
 
 router.use("/health", healthRoutes);
+router.use("/", docsRoutes);
 router.use("/api/v1/auth", authRoutes);
 router.use("/api/v1/users", userRoutes);
 router.use("/api/v1/channels", channelRoutes);
