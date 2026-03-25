@@ -1,137 +1,115 @@
 # Streamly Backend
 
-> 🎬 A production-disciplined YouTube-like backend built as a modular monolith with Node.js, Express, MongoDB, Cloudinary, and Scalar API docs.
+Production-oriented backend for a video platform, built as a modular monolith with Node.js, Express, MongoDB, Cloudinary, and OpenAPI-powered docs via Scalar.
 
-## 1. Title + Tagline
+## Overview
 
-### **Streamly Backend**
-**A clean, scalable, interview-ready backend for video platforms with auth, videos, subscriptions, comments, reactions, and production-grade structure.**
+Streamly is structured to look like an actual backend service, not a tutorial app. It separates HTTP handling, business logic, persistence, infrastructure integrations, and shared middleware so features can grow without collapsing into controller-heavy code.
 
-## 2. Problem Statement
+It currently supports:
 
-Modern video platforms need more than basic CRUD. They need:
-
-- secure authentication
-- structured video ownership and visibility
-- scalable comments and reactions
-- relationship modeling like subscriptions
-- clear API contracts
-- production-ready architecture instead of tutorial-style files
-
-Most beginner backends collapse into:
-
-- fat controllers
-- weak auth/session handling
-- no clear separation of concerns
-- poor scaling story
-- missing documentation
-
-This project solves that by turning a simple Node/Express app into a backend that looks and behaves like a serious real-world system.
-
-## 3. Solution Overview
-
-Streamly is designed as a **modular monolith**.
-
-Instead of jumping to microservices, it keeps deployment simple while enforcing strong boundaries inside the codebase:
-
-- **controllers** handle HTTP
-- **services** own business logic
-- **repositories** isolate database access
-- **middlewares** handle cross-cutting concerns
-- **infrastructure adapters** isolate external integrations
-
-The system currently supports:
-
-- JWT auth with refresh-session rotation
-- user and channel profile management
-- video CRUD with publication state and visibility
+- JWT-based auth with session-backed refresh token rotation
+- user account management and channel profile lookup
+- video publishing with visibility and status controls
 - subscriptions
-- flat threaded comments
-- likes on videos and comments
-- OpenAPI-based docs with Scalar
-- rate limiting, security headers, and structured logs
+- comments and replies
+- reactions on videos and comments
+- health probes, rate limiting, security headers, structured logging
+- OpenAPI JSON and interactive API docs
 
-## 4. Tech Stack
+## Architecture
 
-### **Core**
+### System View
 
-- 🟢 **Node.js**
-- ⚡ **Express**
-- 🍃 **MongoDB**
-- 🧠 **Mongoose**
+```mermaid
+flowchart TD
+    A[Client App or API Consumer] --> B[Express App]
+    B --> C[Global Middleware]
+    C --> D[Route Modules]
+    D --> E[Controllers]
+    E --> F[Services]
+    F --> G[Repositories]
+    G --> H[(MongoDB)]
+    F --> I[Infrastructure Adapters]
+    I --> J[Cloudinary]
+    I --> K[JWT / Password Services]
 
-### **Auth & Security**
-
-- 🔐 **JWT**
-- 🔑 **bcrypt**
-- 🛡️ **helmet**
-- 🚦 **express-rate-limit**
-
-### **Media**
-
-- ☁️ **Cloudinary**
-- 📦 **Multer**
-
-### **Documentation**
-
-- 📘 **OpenAPI 3.1**
-- ✨ **Scalar**
-
-### **Dev Tools**
-
-- 🔄 **nodemon**
-- 🎨 **Prettier**
-
-## 5. Architecture
-
-### High-Level Architecture
-
-```text
-Browser Client
-     |
-     v
-Express App
-     |
-     +--> Middlewares
-     |     - request context
-     |     - CORS
-     |     - helmet
-     |     - rate limiting
-     |     - auth
-     |     - validation
-     |
-     +--> Module Routes
-           |
-           +--> Controllers
-                 |
-                 +--> Services
-                       |
-                       +--> Repositories
-                             |
-                             +--> MongoDB
-                       |
-                       +--> Infrastructure
-                             - JWT/session helpers
-                             - Cloudinary storage
-                             - logger
+    C --> C1[Request Context]
+    C --> C2[Helmet]
+    C --> C3[CORS]
+    C --> C4[Rate Limiting]
+    C --> C5[Cookie Parsing]
+    C --> C6[Validation]
+    C --> C7[Auth Middleware]
 ```
 
-### Folder Architecture
+### Request Lifecycle
+
+```mermaid
+sequenceDiagram
+    participant Client
+    participant Route
+    participant Middleware
+    participant Controller
+    participant Service
+    participant Repository
+    participant DB as MongoDB
+
+    Client->>Route: HTTP request
+    Route->>Middleware: validate / auth / rate limit
+    Middleware->>Controller: sanitized request
+    Controller->>Service: execute use case
+    Service->>Repository: query or write
+    Repository->>DB: database operation
+    DB-->>Repository: result
+    Repository-->>Service: domain data
+    Service-->>Controller: final payload
+    Controller-->>Client: ApiResponse JSON
+```
+
+### Auth and Session Rotation
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant API
+    participant SessionStore as Session Collection
+
+    User->>API: POST /api/v1/auth/login
+    API->>SessionStore: create hashed refresh-token session
+    API-->>User: accessToken + refreshToken + cookies
+
+    User->>API: POST /api/v1/auth/refresh
+    API->>SessionStore: verify active hashed session
+    API->>SessionStore: revoke old session
+    API->>SessionStore: create new session
+    API-->>User: rotated accessToken + refreshToken
+```
+
+## Project Structure
 
 ```text
 src/
-  app/
-  config/
-  infrastructure/
-  lib/
-  middlewares/
-  models/
-  modules/
+  app/              # app bootstrap, route mounting, server startup
+  config/           # env, DB, CORS, OpenAPI config
+  infrastructure/   # Cloudinary and auth helpers
+  lib/              # logger, ApiError, ApiResponse, async wrapper
+  middlewares/      # auth, validation, rate limiting, error handling, uploads
+  models/           # Mongoose models
+  modules/          # feature modules
+    auth/
+    users/
+    channels/
+    videos/
+    subscriptions/
+    comments/
+    reactions/
+    health/
+    docs/
+  utils/            # cookie helpers
 ```
 
-### Module Architecture
-
-Each module follows:
+Each feature module follows the same pattern:
 
 ```text
 module/
@@ -142,303 +120,182 @@ module/
   *.schema.js
 ```
 
-### Why This Architecture
+## Core Capabilities
 
-- ✅ simpler than microservices
-- ✅ cleaner than controller-heavy Express apps
-- ✅ easier to explain in interviews
-- ✅ easy to extend with Redis, queues, and search later
+### Authentication
 
-## 6. Features
+- register with avatar and optional cover image upload
+- login with email or username
+- refresh access using session-backed refresh tokens
+- logout and revoke current refresh session
+- issue auth cookies in addition to JSON tokens
 
-### 🔐 Authentication
+### Users and Channels
 
-- user registration
-- user login
-- refresh token rotation
-- logout
-- session-backed refresh token handling
-- hashed password storage
-
-### 👤 Users & Channels
-
-- get current user profile
-- update user profile
+- fetch current user profile
+- update account details
 - change password
 - update avatar
 - update cover image
 - fetch public channel profile by username
 
-### 🎥 Videos
+### Videos
 
-- create video
-- list published videos
-- fetch single video
-- update owned video
-- delete owned video
+- create video with thumbnail and media upload
+- list published videos with pagination and filtering
+- fetch a single video with visibility checks
+- update owned videos
+- delete owned videos
 - support `draft`, `published`, `archived`
 - support `public`, `private`, `unlisted`
 
-### 📡 Subscriptions
+### Social Features
 
-- subscribe to a channel
-- unsubscribe from a channel
+- subscribe and unsubscribe to channels
 - list current user subscriptions
+- add comments and replies
+- update or delete owned comments
+- react to videos and comments
 
-### 💬 Comments
+### Operational Features
 
-- list comments for a video
-- add top-level comments
-- add replies using `parentCommentId`
-- update owned comment
-- delete owned comment
+- liveness and readiness probes
+- global API rate limiting and stricter auth rate limiting
+- `helmet` security headers
+- request IDs and structured request logging
+- OpenAPI 3.1 spec at `/openapi.json`
+- interactive Scalar docs at `/docs`
 
-### ❤️ Reactions
+## API Surface
 
-- like a video
-- unlike a video
-- like a comment
-- unlike a comment
+| Area | Endpoints |
+| --- | --- |
+| Health | `GET /health/live`, `GET /health/ready` |
+| Docs | `GET /openapi.json`, `GET /docs` |
+| Auth | `POST /api/v1/auth/register`, `POST /api/v1/auth/login`, `POST /api/v1/auth/refresh`, `POST /api/v1/auth/logout` |
+| Users | `GET /api/v1/users/me`, `PATCH /api/v1/users/me`, `PATCH /api/v1/users/me/password`, `PATCH /api/v1/users/me/avatar`, `PATCH /api/v1/users/me/cover-image` |
+| Channels | `GET /api/v1/channels/:username` |
+| Videos | `GET /api/v1/videos`, `GET /api/v1/videos/:videoId`, `POST /api/v1/videos`, `PATCH /api/v1/videos/:videoId`, `DELETE /api/v1/videos/:videoId` |
+| Subscriptions | `GET /api/v1/subscriptions/me`, `POST /api/v1/subscriptions/channels/:channelId`, `DELETE /api/v1/subscriptions/channels/:channelId` |
+| Comments | `GET /api/v1/comments/videos/:videoId`, `POST /api/v1/comments/videos/:videoId`, `PATCH /api/v1/comments/:commentId`, `DELETE /api/v1/comments/:commentId` |
+| Reactions | `POST /api/v1/reactions/:targetType/:targetId`, `DELETE /api/v1/reactions/:targetType/:targetId` |
 
-### ⚙️ Production Hardening
+## Quick Start
 
-- centralized error handling
-- request IDs
-- structured logs
-- helmet security headers
-- global and auth rate limits
-- readiness and liveness endpoints
-- OpenAPI + Scalar docs
-
-## 7. API / Flow
-
-### Request Lifecycle
-
-```text
-Client Request
-   -> Route
-   -> Validation Middleware
-   -> Auth Middleware (if protected)
-   -> Controller
-   -> Service
-   -> Repository
-   -> MongoDB / Infrastructure
-   -> ApiResponse
-```
-
-### Example Flow: Create Video
-
-```text
-Authenticated User
-   -> POST /api/v1/videos
-   -> upload thumbnail + video
-   -> validate metadata
-   -> upload files to Cloudinary
-   -> persist video document
-   -> return created video
-```
-
-### Example Flow: Comment on Video
-
-```text
-Authenticated User
-   -> POST /api/v1/comments/videos/:videoId
-   -> validate comment payload
-   -> verify video visibility
-   -> create comment
-   -> update video.commentsCount
-   -> update parent replyCount if reply
-   -> return comment
-```
-
-### Example Flow: Like a Comment
-
-```text
-Authenticated User
-   -> POST /api/v1/reactions/comment/:commentId
-   -> validate target
-   -> verify target visibility
-   -> ensure one reaction per user
-   -> create reaction
-   -> increment comment.likesCount
-```
-
-### Main API Surface
-
-#### Health
-
-- `GET /health/live`
-- `GET /health/ready`
-
-#### Docs
-
-- `GET /openapi.json`
-- `GET /docs`
-
-#### Auth
-
-- `POST /api/v1/auth/register`
-- `POST /api/v1/auth/login`
-- `POST /api/v1/auth/refresh`
-- `POST /api/v1/auth/logout`
-
-#### Users
-
-- `GET /api/v1/users/me`
-- `PATCH /api/v1/users/me`
-- `PATCH /api/v1/users/me/password`
-- `PATCH /api/v1/users/me/avatar`
-- `PATCH /api/v1/users/me/cover-image`
-
-#### Channels
-
-- `GET /api/v1/channels/:username`
-
-#### Videos
-
-- `POST /api/v1/videos`
-- `GET /api/v1/videos`
-- `GET /api/v1/videos/:videoId`
-- `PATCH /api/v1/videos/:videoId`
-- `DELETE /api/v1/videos/:videoId`
-
-#### Subscriptions
-
-- `GET /api/v1/subscriptions/me`
-- `POST /api/v1/subscriptions/channels/:channelId`
-- `DELETE /api/v1/subscriptions/channels/:channelId`
-
-#### Comments
-
-- `GET /api/v1/comments/videos/:videoId`
-- `POST /api/v1/comments/videos/:videoId`
-- `PATCH /api/v1/comments/:commentId`
-- `DELETE /api/v1/comments/:commentId`
-
-#### Reactions
-
-- `POST /api/v1/reactions/:targetType/:targetId`
-- `DELETE /api/v1/reactions/:targetType/:targetId`
-
-## 8. Setup Instructions
-
-### 1. Clone and enter the project
-
-```bash
-git clone <your-repo-url>
-cd Streamly-backend
-```
-
-### 2. Install dependencies
+### 1. Install dependencies
 
 ```bash
 npm install
 ```
 
-### 3. Create your environment file
+### 2. Create environment file
 
 ```bash
 cp .env.example .env
 ```
 
-### 4. Fill required values
+### 3. Fill required values
 
-Important variables:
+| Variable | Required | Purpose |
+| --- | --- | --- |
+| `NODE_ENV` | no | Runtime mode, defaults to `development` |
+| `PORT` | no | HTTP port, defaults to `8000` |
+| `APP_URL` | no | Base URL used in OpenAPI server metadata |
+| `CORS_ORIGIN` | no | Allowed frontend origin list, comma-separated |
+| `MONGODB_URI` | yes | MongoDB connection string without DB suffix |
+| `ACCESS_TOKEN_SECRET` | yes | JWT secret for access tokens |
+| `ACCESS_TOKEN_EXPIRY` | yes | Access token TTL |
+| `REFRESH_TOKEN_SECRET` | yes | JWT secret for refresh tokens |
+| `REFRESH_TOKEN_EXPIRY` | yes | Refresh token TTL |
+| `CLOUDINARY_CLOUD_NAME` | yes | Cloudinary account name |
+| `CLOUDINARY_API_KEY` | yes | Cloudinary API key |
+| `CLOUDINARY_API_SECRET` | yes | Cloudinary API secret |
+| `RATE_LIMIT_WINDOW_MS` | no | Global rate-limit window |
+| `RATE_LIMIT_MAX_REQUESTS` | no | Global rate-limit cap |
 
-- `NODE_ENV`
-- `PORT`
-- `APP_URL`
-- `CORS_ORIGIN`
-- `MONGODB_URI`
-- `ACCESS_TOKEN_SECRET`
-- `ACCESS_TOKEN_EXPIRY`
-- `REFRESH_TOKEN_SECRET`
-- `REFRESH_TOKEN_EXPIRY`
-- `CLOUDINARY_CLOUD_NAME`
-- `CLOUDINARY_API_KEY`
-- `CLOUDINARY_API_SECRET`
-- `RATE_LIMIT_WINDOW_MS`
-- `RATE_LIMIT_MAX_REQUESTS`
+The checked-in example file is [`.env.example`](/home/sarthak/dev/Streamly-backend/.env.example).
 
-### 5. Start MongoDB
+### 4. Start MongoDB
 
-Use either:
+Use a local MongoDB instance or MongoDB Atlas. The server appends the database name internally during connection.
 
-- local MongoDB
-- MongoDB Atlas
-
-### 6. Start the server
+### 5. Start the API
 
 ```bash
 npm run dev
 ```
 
-### 7. Verify the app
+For a non-watch process:
+
+```bash
+npm start
+```
+
+## Runbook
+
+### Health Checks
 
 ```bash
 curl http://localhost:8000/health/live
 curl http://localhost:8000/health/ready
+```
+
+### API Docs
+
+- Scalar UI: `http://localhost:8000/docs`
+- OpenAPI JSON: `http://localhost:8000/openapi.json`
+
+### Example Smoke Test
+
+```bash
 curl http://localhost:8000/openapi.json
 ```
 
-Then open:
+## Example Flows
 
-```text
-http://localhost:8000/docs
+### Create a Video
+
+```mermaid
+flowchart LR
+    A[Authenticated User] --> B[POST /api/v1/videos]
+    B --> C[Multer parses thumbnail and videoFile]
+    C --> D[Validation middleware]
+    D --> E[Cloudinary upload]
+    E --> F[Video service]
+    F --> G[(MongoDB)]
+    G --> H[Created video response]
 ```
 
-## 9. Future Improvements
+### Comment on a Video
 
-### 📈 Observability
+```mermaid
+flowchart LR
+    A[Authenticated User] --> B[POST /api/v1/comments/videos/:videoId]
+    B --> C[Validate payload]
+    C --> D[Ensure video is visible]
+    D --> E[Create comment]
+    E --> F[Increment video commentsCount]
+    F --> G[Increment parent replyCount if reply]
+    G --> H[Return comment]
+```
 
-- Prometheus metrics endpoint
-- Grafana dashboards
-- MongoDB query metrics
-- error alerting
+## Tooling
 
-### ✅ Testing
+- runtime: Node.js + Express
+- database: MongoDB + Mongoose
+- media storage: Cloudinary
+- file ingestion: Multer
+- auth: JWT + bcrypt
+- docs: OpenAPI 3.1 + Scalar
+- development: nodemon, Prettier
 
-- integration tests
-- service-level unit tests
-- seeded test database
+## Notes and Limitations
 
-### 🧵 Consistency
+- there is no committed automated test suite yet, even though `npm test` is defined
+- media uploads require valid Cloudinary credentials at startup
+- readiness depends on active MongoDB connectivity
+- this service is organized as a modular monolith, not a microservice system
 
-- database transactions for multi-write flows
-- stronger count reconciliation jobs
+## Why This README Exists
 
-### 🎞️ Media Pipeline
-
-- background processing jobs
-- thumbnails and transcoding
-- object storage abstraction for future S3 migration
-
-### 🔎 Product Features
-
-- search and discovery
-- playlists
-- watch history endpoints
-- admin/moderation tools
-- notifications
-
-### 🚀 Scaling Up Later
-
-- Redis for cache and rate-limit storage
-- BullMQ for background jobs
-- read-heavy optimizations
-- search service
-
-## Documentation & DX
-
-- 📘 Scalar Docs: `/docs`
-- 🧾 OpenAPI JSON: `/openapi.json`
-- ⚙️ Example env: [.env.example](/home/sarthak/dev/Streamly-backend/.env.example)
-
-## Why This Project Is Strong
-
-- modular monolith instead of chaos
-- safer auth than tutorial-grade apps
-- realistic video/comment/subscription/reaction modeling
-- clear boundaries for future scale
-- production-oriented hardening
-- documentation suitable for demos and interviews
+This repository is positioned like a production-style backend project. The documentation should make architecture, setup, and API usage obvious within a few minutes. That is the standard this `README` now targets.
